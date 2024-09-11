@@ -27,6 +27,21 @@ Dexter responds to queries about its name and interacts with you in a friendly m
 - Webbrowser: For opening websites in the default browser.
 - Datetime: For getting current date and time.
 
+## 📂 Installation
+Follow these steps to set up the Dexter Desktop Assistant on your machine:
+
+### 1️⃣ Clone the repository:
+```bash
+git clone https://github.com/your-username/dexter-desktop-assistant.git
+```
+### 2️⃣ Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+### 3️⃣ Run Dexter:
+```bash
+python dexter.py
+```
 ## 📝 How to Use
 
 ### 1️⃣ Run the program.
@@ -52,3 +67,9 @@ Dexter responds to queries about its name and interacts with you in a friendly m
 
 ## 🤝 Contributing
 Feel free to contribute by submitting pull requests or reporting issues!
+
+### 1️⃣ Fork the repository
+### 2️⃣ Create a new branch (```git checkout -b feature-branch```)
+### 3️⃣ Commit your changes (```git commit -am 'Add new feature'```)
+### 4️⃣ Push to the branch (```git push origin feature-branch```)
+### 5️⃣ Open a Pull Request
