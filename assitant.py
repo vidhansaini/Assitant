@@ -3,8 +3,10 @@ import subprocess
 import speech_recognition as sr
 import pyttsx3
 import ctypes
-import screen_brightness_control as sbc
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import webbrowser
+import wikipedia
+import screen_brightness_control as sbc 
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume 
 from comtypes import CLSCTX_ALL
 from ctypes import cast, POINTER
 
@@ -112,7 +114,7 @@ def handle_command(command):
             open_application("notepad.exe")
         elif 'chrome' in command:
             open_application("C:/Program Files/Google/Chrome/Application/chrome.exe")
-        elif 'ghostoftsushima' in command:
+        elif 'ghost' in command:
             open_application("C:\Games\Ghost of Tsushima DIRECTOR'S CUT\GhostOfTsushima.exe")
         else:
             speak("Sorry, I don't know how to open that.")
@@ -146,6 +148,38 @@ def handle_command(command):
     elif 'keyboard' in command:
         open_on_screen_keyboard()
     
+    elif "open youtube" in command:
+        speak("Opening youtube")
+        webbrowser.open("www.youtube.com")
+    
+    elif "open google" in command:
+        speak("Opening Google ")
+			
+		# in the open method we just to give the link
+		# of the website and it automatically open 
+		# it in your default browser
+        webbrowser.open("www.google.com")
+    
+    elif "open github" in command:
+        speak("Opening github")
+        webbrowser.open("https://github.com/vidhansaini/vidhansaini")
+    
+    elif "open Linkedin" in command:
+        speak("Opening Linkedin")
+        webbrowser.open("https://www.linkedin.com/in/vidhan-saini/")
+    
+    elif "from wikipedia" in command:
+        # if any one wants to have a information
+		# from wikipedia
+        speak("Checking the wikipedia ")
+        command = command.replace("wikipedia", "")
+        # it will give the summary of 4 lines from 
+		# wikipedia we can increase and decrease 
+			# it also.
+        result = wikipedia.summary(command, sentences=4)
+        speak("According to wikipedia")
+        speak(result)
+    
     else:
         speak("Sorry, I don't understand that command.")
 
@@ -158,11 +192,14 @@ def run_dexter():
             command = command.replace('dexter', '').strip()
             print(f"Processing command: {command}")
             
-            if 'exit' in command or 'quit' in command:
+            if 'exit' in command or 'quit' in command or 'bye' in command:
                 speak("Goodbye!")
                 break
             else:
                 handle_command(command)
+        elif "good" in command or "nice" in command or "verygood" in command:
+            speak("Thanks i am happy to help")
+
         else:
             print(f"No valid hotword 'Dexter' detected in: {command}")
 
