@@ -11,7 +11,7 @@ def speak_news(text):
 
 # Function to fetch and display news based on country and category
 def get_news(country, category):
-    api_key = "5975c8377e2d4bf3aed1edef6deae45b"  # Replace with your NewsAPI key
+    api_key = "5975c8377e2d4bf3aed1edef6deae45"  # Replace with your NewsAPI key
     url = f"https://newsapi.org/v2/top-headlines?country={country}&category={category}&apiKey={api_key}"
     
     try:
