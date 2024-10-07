@@ -1,179 +1,156 @@
-import pyttsx3
+import os
+import subprocess
 import speech_recognition as sr
-import webbrowser 
-import datetime 
-import wikipedia 
+import pyttsx3
+import ctypes
+import screen_brightness_control as sbc
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from comtypes import CLSCTX_ALL
+from ctypes import cast, POINTER
+
+# Initialize speech recognition and text-to-speech
+recognizer = sr.Recognizer()
+engine = pyttsx3.init()
+
+# Function to speak out responses
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+# Function to listen for a command
+def listen():
+    with sr.Microphone() as source:
+        print("Adjusting for ambient noise...")
+        recognizer.adjust_for_ambient_noise(source, duration=1)  # Adjusts for background noise
+        print("Listening...")
+        audio = recognizer.listen(source)
+    try:
+        command = recognizer.recognize_google(audio).lower()
+        print(f"Command received: {command}")
+        return command
+    except sr.UnknownValueError:
+        speak("Sorry, I didn't catch that.")
+        print("Could not understand the audio")
+        return ""
+    except sr.RequestError as e:
+        speak("Could not request results. Check your internet connection.")
+        print(f"RequestError: {e}")
+        return ""
+
+# Function to open files/folders/applications
+def open_application(path):
+    try:
+        os.startfile(path)  # Windows
+        speak(f"Opening {path}")
+    except Exception as e:
+        speak("Sorry, I can't open that.")
+        print(e)
+
+# Function to control volume
+def set_volume(level):
+    try:
+        devices = AudioUtilities.GetSpeakers()
+        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        volume = cast(interface, POINTER(IAudioEndpointVolume))
+        
+        # Get range and scale the volume properly
+        min_vol, max_vol = volume.GetVolumeRange()[:2]
+        current_volume = volume.GetMasterVolumeLevelScalar()
+        
+        new_volume = min(max(current_volume + level, 0.0), 1.0)
+        volume.SetMasterVolumeLevelScalar(new_volume, None)
+        
+        speak(f"Volume set to {int(new_volume * 100)}%")
+    except Exception as e:
+        speak("Sorry, I couldn't adjust the volume.")
+        print(f"Volume error: {e}")
 
 
-# this method is for taking the commands
-# and recognizing the command from the
-# speech_Recognition module we will use
-# the recongizer method for recognizing
-def takeCommand():
+# Function to control brightness
+def change_brightness(level):
+    try:
+        displays = sbc.list_monitors()  # Check available monitors
+        current_brightness = sbc.get_brightness(display=displays[0])[0]
+        new_brightness = min(max(current_brightness + level, 0), 100)
+        
+        sbc.set_brightness(new_brightness, display=displays[0])
+        speak(f"Brightness set to {new_brightness}%")
+    except Exception as e:
+        speak("Sorry, I couldn't adjust the brightness.")
+        print(f"Brightness error: {e}")
 
-	r = sr.Recognizer()
+#Function to get news
+def get_news(country, category):
+    try:
+        # Assuming NewsTeller accepts country and category as command-line arguments
+        subprocess.run(['python', 'getnews.py', country, category], check=True)
+        speak(f"Fetching {category} news from {country}.")
+    except Exception as e:
+        speak("Sorry, I couldn't fetch the news.")
+        print(f"News error: {e}")
 
-	# from the speech_Recognition module 
-	# we will use the Microphone module
-	# for listening the command
-	with sr.Microphone() as source:
-		print('Listening -_-')
-		
-		# seconds of non-speaking audio before 
-		# a phrase is considered complete
-		r.pause_threshold = 0.7
-		audio = r.listen(source)
-		
-		# Now we will be using the try and catch
-		# method so that if sound is recognized 
-		# it is good else we will have exception 
-		# handling
-		try:
-			print("Recognizing -_-")
-			
-			# for Listening the command in indian
-			# english we can also use 'hi-In' 
-			# for hindi recognizing
-			Query = r.recognize_google(audio, language='en-in')
-			print("user said=", Query)
-			
-		except Exception as e:
-			print(e)
-			print("Say that again sir")
-			return "None"
-		
-		return Query
+# Core function to handle commands
+def handle_command(command):
+    if 'open' in command:
+        if 'notepad' in command:
+            open_application("notepad.exe")
+        elif 'chrome' in command:
+            open_application("C:/Program Files/Google/Chrome/Application/chrome.exe")
+        elif 'ghostoftsushima' in command:
+            open_application("C:\Games\Ghost of Tsushima DIRECTOR'S CUT\GhostOfTsushima.exe")
+        elif 'keyboard' in command:
+            open_application("On-Screen Keyboard.lnk")
+        else:
+            speak("Sorry, I don't know how to open that.")
+    
+    elif 'volume' in command:
+        if 'up' in command:
+            set_volume(0.1)  # Increase volume by 10%
+        elif 'down' in command:
+            set_volume(-0.1)  # Decrease volume by 10%
+    
+    elif 'brightness' in command:
+        if 'up' in command:
+            change_brightness(10)  # Increase brightness by 10%
+        elif 'down' in command:
+            change_brightness(-10)  # Decrease brightness by 10%
+    
+    elif 'news' in command:
+        try:
+            # Example command: "dexter news india sports"
+            words = command.split()
+            if len(words) >= 3:
+                country = words[1]   # Extract country (second word)
+                category = ' '.join(words[2:])  # Extract everything after the country as category
+                get_news(country, category)
+            else:
+                speak("Please specify both a country and a category for the news.")
+        except Exception as e:
+            speak("Sorry, I couldn't process the news request.")
+            print(f"Command error: {e}")
+    
+    else:
+        speak("Sorry, I don't understand that command.")
 
-def speak(audio):
-	
-	engine = pyttsx3.init()
-	# getter method(gets the current value
-	# of engine property)
-	voices = engine.getProperty('voices')
-	rate = engine.getProperty('rate')
-	
-	# setter method .[0]=male voice and 
-	# [1]=female voice in set Property.
-	engine.setProperty('voice', voices[0].id)
-	engine.setProperty('rate', rate+50)
-	
-	# Method for the speaking of the assistant
-	engine.say(audio) 
-	
-	# Blocks while processing all the currently
-	# queued commands
-	engine.runAndWait()
+# Main function to run Dexter
+def run_dexter():
+    speak("Hello, I am Dexter. How can I assist you?")
+    while True:
+        command = listen()  # Listen for command
+        if command:
+            if 'dexter' in command:  # Check for hotword
+                command = command.replace('dexter', '').strip()
+                print(f"Processing command: {command}")  # Debug message
+                if 'open' in command:
+                    open_application('notepad.exe')  # Test command
+                elif 'exit' in command or 'quit' in command:
+                    speak("Goodbye!")
+                    break
+            else:
+                print(f"No hotword 'Dexter' detected in: {command}")
+        else:
+            print("No command received. Retry.")
 
-def tellDay():
-	
-	# This function is for telling the
-	# day of the week
-	day = datetime.datetime.today().weekday() + 1
-	
-	#this line tells us about the number 
-	# that will help us in telling the day
-	Day_dict = {1: 'Monday', 2: 'Tuesday', 
-				3: 'Wednesday', 4: 'Thursday', 
-				5: 'Friday', 6: 'Saturday',
-				7: 'Sunday'}
-	
-	if day in Day_dict.keys():
-		day_of_the_week = Day_dict[day]
-		print(day_of_the_week)
-		speak("The day is " + day_of_the_week)
-
-
-def tellTime():
-	
-	# This method will give the time
-	time = str(datetime.datetime.now())
-	# the time will be displayed like 
-	# this "2020-06-05 17:50:14.582630"
-	#nd then after slicing we can get time
-	print(time)
-	hour = time[11:13]
-	min = time[14:16]
-	speak("The time is sir" + hour + "Hours and" + min + "Minutes") 
-
-def Hello():
-	
-	# This function is for when the assistant 
-	# is called it will say hello and then 
-	# take query
-	speak("hello how can i help")
-
-
-def Take_query():
-
-	# calling the Hello function for 
-	# making it more interactive
-	Hello()
-	
-	# This loop is infinite as it will take
-	# our queries continuously until and unless
-	# we do not say bye to exit or terminate 
-	# the program
-	while(True):
-		
-		# taking the query and making it into
-		# lower case so that most of the times 
-		# query matches and we get the perfect 
-		# output
-		query = takeCommand().lower()
-		if "open google" in query:
-			speak("Opening Google ")
-			
-			# in the open method we just to give the link
-			# of the website and it automatically open 
-			# it in your default browser
-			webbrowser.open("www.google.com")
-			continue
-		
-		elif "open youtube" in query:
-			speak("Opening youtube ")
-			webbrowser.open("www.youtube.com")
-			continue
-
-		elif "open github" in query:
-			speak("Opening github")
-			webbrowser.open("https://github.com/vidhansaini/vidhansaini")
-		
-		elif "open linkedin" in query:
-			speak("Opening Linkedin")
-			webbrowser.open("https://www.linkedin.com/in/vidhan-saini/")
-
-		elif "which day it is" in query:
-			tellDay()
-			continue
-		
-		elif "tell me the time" in query:
-			tellTime()
-			continue
-		
-		# this will exit and terminate the program
-		elif "bye" in query:
-			speak("Bye sir")
-			exit()
-		
-		elif "from wikipedia" in query:
-			
-			# if any one wants to have a information
-			# from wikipedia
-			speak("Checking the wikipedia ")
-			query = query.replace("wikipedia", "")
-			
-			# it will give the summary of 4 lines from 
-			# wikipedia we can increase and decrease 
-			# it also.
-			result = wikipedia.summary(query, sentences=4)
-			speak("According to wikipedia")
-			speak(result)
-		
-		elif "tell me your name" in query:
-			speak("I am dexter. Your desktop Assistant")
-
-if __name__ == '__main__':
-	
-	# main method for executing
-	# the functions
-	Take_query()
+# Run Dexter
+if __name__ == "__main__":
+    run_dexter()
