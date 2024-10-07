@@ -54,12 +54,10 @@ def set_volume(level):
         volume = cast(interface, POINTER(IAudioEndpointVolume))
         
         # Get range and scale the volume properly
-        min_vol, max_vol = volume.GetVolumeRange()[:2]
         current_volume = volume.GetMasterVolumeLevelScalar()
+        new_volume = min(max(current_volume + level, 0.0), 1.0)  # Valid range 0 to 1
         
-        new_volume = min(max(current_volume + level, 0.0), 1.0)
         volume.SetMasterVolumeLevelScalar(new_volume, None)
-        
         speak(f"Volume set to {int(new_volume * 100)}%")
     except Exception as e:
         speak("Sorry, I couldn't adjust the volume.")
@@ -70,6 +68,10 @@ def set_volume(level):
 def change_brightness(level):
     try:
         displays = sbc.list_monitors()  # Check available monitors
+        if not displays:
+            speak("No monitors detected.")
+            return
+        
         current_brightness = sbc.get_brightness(display=displays[0])[0]
         new_brightness = min(max(current_brightness + level, 0), 100)
         
@@ -79,10 +81,24 @@ def change_brightness(level):
         speak("Sorry, I couldn't adjust the brightness.")
         print(f"Brightness error: {e}")
 
+#Function for keyboard
+def open_on_screen_keyboard():
+    try:
+        os.system("start osk")  # Windows
+        speak("Opening on-screen keyboard.")
+    except Exception as e:
+        speak("Sorry, I can't open the on-screen keyboard.")
+        print(f"Keyboard error: {e}")
+
 #Function to get news
 def get_news(country, category):
     try:
-        # Assuming NewsTeller accepts country and category as command-line arguments
+        # Ensure getnews.py exists and works
+        if not os.path.exists('getnews.py'):
+            speak("The news fetching script is missing.")
+            return
+        
+        # Assuming getnews.py handles country and category as arguments
         subprocess.run(['python', 'getnews.py', country, category], check=True)
         speak(f"Fetching {category} news from {country}.")
     except Exception as e:
@@ -98,8 +114,6 @@ def handle_command(command):
             open_application("C:/Program Files/Google/Chrome/Application/chrome.exe")
         elif 'ghostoftsushima' in command:
             open_application("C:\Games\Ghost of Tsushima DIRECTOR'S CUT\GhostOfTsushima.exe")
-        elif 'keyboard' in command:
-            open_application("On-Screen Keyboard.lnk")
         else:
             speak("Sorry, I don't know how to open that.")
     
@@ -129,6 +143,9 @@ def handle_command(command):
             speak("Sorry, I couldn't process the news request.")
             print(f"Command error: {e}")
     
+    elif 'keyboard' in command:
+        open_on_screen_keyboard()
+    
     else:
         speak("Sorry, I don't understand that command.")
 
@@ -137,19 +154,18 @@ def run_dexter():
     speak("Hello, I am Dexter. How can I assist you?")
     while True:
         command = listen()  # Listen for command
-        if command:
-            if 'dexter' in command:  # Check for hotword
-                command = command.replace('dexter', '').strip()
-                print(f"Processing command: {command}")  # Debug message
-                if 'open' in command:
-                    open_application('notepad.exe')  # Test command
-                elif 'exit' in command or 'quit' in command:
-                    speak("Goodbye!")
-                    break
+        if command and 'dexter' in command:  # Ensure hotword is in command
+            command = command.replace('dexter', '').strip()
+            print(f"Processing command: {command}")
+            
+            if 'exit' in command or 'quit' in command:
+                speak("Goodbye!")
+                break
             else:
-                print(f"No hotword 'Dexter' detected in: {command}")
+                handle_command(command)
         else:
-            print("No command received. Retry.")
+            print(f"No valid hotword 'Dexter' detected in: {command}")
+
 
 # Run Dexter
 if __name__ == "__main__":
